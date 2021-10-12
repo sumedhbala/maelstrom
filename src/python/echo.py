@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 import json
 import sys
+# from concurrent import futures
+from threading import Thread, activeCount
+
 import Node
 import Locks
-
+import Logging
 
 while True:
     line = sys.stdin.readline()
@@ -19,8 +22,11 @@ while True:
     elif 'topology' == obj['body']['type']:
         node.topology(obj)
     elif 'broadcast' == obj['body']['type']:
-        node.broadcast(obj)
+        Logging.log_stderr("Number of threads active {} {}".format(node.id, activeCount()))
+        thread = Thread(target=node.broadcast, args=(obj,))
+        thread.start()
     elif 'read' == obj['body']['type']:
         node.read(obj)
-
-
+    elif 'broadcast_ok' == obj['body']['type']:
+        node.handlers[obj['body']['in_reply_to']](obj)
+        del node.handlers[obj['body']['in_reply_to']]
